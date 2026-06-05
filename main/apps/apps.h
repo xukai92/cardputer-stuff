@@ -6,6 +6,7 @@
 #pragma once
 #include "utils/audio/audio.h"
 #include "app_dummy/app_dummy.h"
+#include "app_hello/app_hello.h"
 #include "app_launcher/app_launcher.h"
 #include "app_stringir_toolkit/app_stringir_toolkit.h"
 #include "app_wifi_scan/app_wifi_scan.h"
