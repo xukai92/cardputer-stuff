@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "cardputer": {
+      "command": "node",
+      "args": ["/ABSOLUTE/PATH/TO/cardputer-stuff/server/src/index.mjs"],
+      "env": { "CARDPUTER_WS_PORT": "8787" }
+    }
+  }
+}

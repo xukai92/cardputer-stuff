@@ -1,0 +1,21 @@
+{
+  "name": "cardputer-claude-bridge",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Bridges a Cardputer (over WebSocket) to a real Claude Code session via the Anthropic channel protocol.",
+  "bin": {
+    "cardputer-claude-bridge": "src/index.mjs"
+  },
+  "scripts": {
+    "start": "node src/index.mjs",
+    "test": "node test/smoke.mjs"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "ws": "^8.18.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
