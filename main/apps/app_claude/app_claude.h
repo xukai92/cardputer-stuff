@@ -4,14 +4,15 @@
  * SPDX-License-Identifier: MIT
  */
 #pragma once
-#include "app_chat/view/chat_view.h"
 #include <mooncake.h>
+#include <hal/hal.h>
 #include <esp_websocket_client.h>
+#include <atomic>
 #include <cstdint>
 #include <deque>
-#include <memory>
 #include <mutex>
 #include <string>
+#include <vector>
 
 /*
  * ====== CONFIGURE ME (at build time — do NOT hardcode secrets here) ======
@@ -36,7 +37,10 @@
 
 /**
  * @brief Chat client that talks to a real Claude Code session via the
- *        cardputer-claude-bridge WebSocket server. Reuses ChatView for the UI.
+ *        cardputer-claude-bridge WebSocket server.
+ *
+ * Features a retained, word-wrapped, scrollable transcript (Fn+;/Fn+. to scroll)
+ * and a live connection indicator.
  */
 class AppClaude : public mooncake::AppAbility {
 public:
@@ -48,21 +52,49 @@ public:
     void onClose() override;
 
 private:
-    std::unique_ptr<ChatView> _chat_view;
+    enum class Kind { Sent, Recv, Sys };
+    struct Msg {
+        Kind kind;
+        std::string text;
+    };
+
+    // --- transcript ---
+    std::vector<Msg> _messages;
+    int _scroll = 0;  // lines scrolled up from the bottom (0 = latest)
+    static constexpr size_t MAX_MESSAGES = 120;
+
+    // --- input ---
+    std::string _input;
+    int _key_event_slot_id      = -1;
+    bool _need_redraw           = true;
+    bool _cursor_on             = false;
+    uint32_t _cursor_update_ms  = 0;
+
+    // --- websocket ---
     esp_websocket_client_handle_t _client = nullptr;
-
-    // Receive queue: WS events run on the websocket task, so incoming lines are
-    // queued here and drained on the main loop (pump_received).
+    std::atomic<bool> _connected{false};
     std::mutex _rx_mutex;
-    std::deque<std::string> _rx_queue;
-    std::string _frame_accum;  // reassembles fragmented text frames
+    std::deque<Msg> _rx_queue;
+    std::string _frame_accum;
 
+    // transcript helpers
+    void add_message(Kind kind, const std::string& text);
+    std::vector<std::string> wrap(const std::string& text, int width) const;
+    std::vector<std::pair<std::string, uint16_t>> build_lines() const;
+
+    // rendering
+    void render();
+    void draw_input_bar();
+
+    // input
+    void handle_key(const Keyboard::KeyEvent_t& keyEvent);
+
+    // websocket
     void start_ws();
     void stop_ws();
     void send_message(const std::string& text);
     void pump_received();
-    void enqueue_rx(const std::string& line);
+    void enqueue_rx(Kind kind, const std::string& text);
     void handle_ws_data(const esp_websocket_event_data_t* d);
-
     static void ws_event_handler(void* arg, esp_event_base_t base, int32_t event_id, void* event_data);
 };

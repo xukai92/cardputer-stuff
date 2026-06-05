@@ -41,7 +41,6 @@ extern "C" void app_main(void)
     GetMooncake().installApp(std::make_unique<AppStringIRToolKit>());
     GetMooncake().installApp(std::make_unique<AppLoraChat>());
     GetMooncake().installApp(std::make_unique<AppGPS>());
-    GetMooncake().installApp(std::make_unique<AppHello>());
     GetMooncake().installApp(std::make_unique<AppClaude>());
     // GetMooncake().installApp(std::make_unique<AppDummy>());
 

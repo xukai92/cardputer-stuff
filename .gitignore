@@ -63,3 +63,7 @@ obj/
 
 sdkconfig
 sdkconfig.old
+
+# user session dir (contains bridge token) + persistent toolchain
+cardputer-agent/
+.toolchain/
