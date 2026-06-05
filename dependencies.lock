@@ -37,8 +37,18 @@ dependencies:
       registry_url: https://components.espressif.com/
       type: service
     version: 1.7.6~1
+  espressif/esp_websocket_client:
+    component_hash: 3fb288702517ef4d75bf933a115f1056ee0c2540d964f9e1d856e0bb67e1dfeb
+    dependencies:
+    - name: idf
+      require: private
+      version: '>=5.0'
+    source:
+      registry_url: https://components.espressif.com/
+      type: service
+    version: 1.7.0
   espressif/tinyusb:
-    component_hash: aa65639878f27a44d349044afd9c3fc134a92bd560874fdac1d836019b5c07ca
+    component_hash: a40b7f67df6ac254a4afd96c6401cc56f2059ae747d6d7e66b568bca53ad0edc
     dependencies:
     - name: idf
       require: private
@@ -50,7 +60,9 @@ dependencies:
     - esp32s2
     - esp32s3
     - esp32p4
-    version: 0.18.0~4
+    - esp32h4
+    - esp32s31
+    version: 0.19.0~3
   idf:
     source:
       type: idf
@@ -68,8 +80,9 @@ dependencies:
 direct_dependencies:
 - espressif/esp-now
 - espressif/esp_tinyusb
+- espressif/esp_websocket_client
 - idf
 - jgromes/radiolib
-manifest_hash: 11dfa23746cd56272c7e2231f3316fed15687713e403eee1876bad6e4bb0f037
+manifest_hash: 5926ff31bf9927f974d41ee683eae4b6e7577bd1ff733feaea71572ce4341d78
 target: esp32s3
 version: 2.0.0
