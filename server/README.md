@@ -82,21 +82,37 @@ cloudflared tunnel run <tunnel>
 
 The device then connects to `wss://cardputer.example.com/?token=<TOKEN>`.
 
-## Test it WITHOUT the Cardputer (recommended first step)
+## Test it WITHOUT the Cardputer (do this before flashing)
 
-Use `websocat` (or `wscat`) on your laptop to stand in for the device. Include
-the token:
+Test in **layers** — each adds one piece, so a failure points at the right
+place. If layer 3 works, the firmware will too (it speaks the same protocol).
 
+**Layer 0 — protocol logic (no network, no Claude):**
 ```bash
-# install: brew install websocat   (or: cargo install websocat)
-websocat 'ws://localhost:8787/?token=YOUR_TOKEN'
-# or, through the tunnel:
-websocat 'wss://cardputer.example.com/?token=YOUR_TOKEN'
+npm test          # smoke test: channel round-trip + token auth enforcement
 ```
 
-Type a line and press enter — it should appear in your Claude TUI as a
-`<channel>` message, and Claude's `cardputer_reply` calls come back to your
-websocat terminal as JSON like `{"type":"reply","text":"…"}`.
+**Layer 1 — bridge locally, with a real Claude session:**
+Wire up `.mcp.json`, run `claude`, then in another terminal use the faithful
+stand-in (speaks the exact frames the firmware sends):
+```bash
+npm run fake-device 'ws://localhost:8787/?token=YOUR_TOKEN'
+```
+Type a line → it appears in the Claude TUI as a `<channel>` message; Claude's
+`cardputer_reply` comes back as `claude < …`. This isolates "is my server ok"
+from "is my tunnel ok".
+
+**Layer 2 — through the Cloudflare tunnel (the real path the device uses):**
+```bash
+npm run fake-device 'wss://cardputer.example.com/?token=YOUR_TOKEN'
+```
+Now you've validated TLS + tunnel + token + the whole loop. Flash with
+confidence.
+
+`websocat` works too (it sends raw lines, which the server also accepts):
+```bash
+websocat 'wss://cardputer.example.com/?token=YOUR_TOKEN'
+```
 
 ## Wire protocol (device <-> server)
 
