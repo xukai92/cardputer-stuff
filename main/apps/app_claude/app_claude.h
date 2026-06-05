@@ -14,13 +14,24 @@
 #include <string>
 
 /*
- * ====== CONFIGURE ME ======
+ * ====== CONFIGURE ME (at build time — do NOT hardcode secrets here) ======
  * The WebSocket URL of the cardputer-claude-bridge server (see ../server).
- * Point this at the machine running `claude` + the bridge, then rebuild.
- *   ws://<host-or-ip>:<CARDPUTER_WS_PORT>
+ * The shared secret travels as a ?token= query param and must match the
+ * server's CARDPUTER_TOKEN env var.
+ *
+ * Set it via an environment variable when you build (see main/CMakeLists.txt):
+ *
+ *   CARDPUTER_CLAUDE_WS_URI='wss://host/?token=SECRET' idf.py build
+ *
+ * Forms:
+ *   - Cloudflare Tunnel (TLS):  wss://<host>/?token=<TOKEN>
+ *   - LAN / localhost (no TLS): ws://<ip>:<port>/?token=<TOKEN>
+ *
+ * The fallback below is only a non-functional placeholder so the firmware
+ * still builds without the env var; it will not connect anywhere.
  */
 #ifndef CARDPUTER_CLAUDE_WS_URI
-#define CARDPUTER_CLAUDE_WS_URI "ws://192.168.1.100:8787"
+#define CARDPUTER_CLAUDE_WS_URI "ws://0.0.0.0:8787/?token=unset"
 #endif
 
 /**

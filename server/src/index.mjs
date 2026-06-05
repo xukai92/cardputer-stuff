@@ -23,6 +23,7 @@
  * All logging goes to stderr.
  */
 
+import crypto from "node:crypto";
 import { WebSocketServer } from "ws";
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
@@ -30,9 +31,32 @@ import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprot
 
 const WS_PORT = parseInt(process.env.CARDPUTER_WS_PORT ?? "8787", 10);
 
+// Shared secret. Connections must present it as ?token=... or an
+// `x-cardputer-token` header. THIS CHANNEL CAN RUN SHELL COMMANDS VIA CLAUDE —
+// always set a token when the bridge is reachable beyond localhost.
+const TOKEN = process.env.CARDPUTER_TOKEN ?? "";
+
 function log(...args) {
   // stderr only — stdout is reserved for the MCP stdio protocol.
   process.stderr.write(`[cardputer-bridge] ${args.join(" ")}\n`);
+}
+
+function extractToken(req) {
+  const header = req.headers["x-cardputer-token"];
+  if (header) return Array.isArray(header) ? header[0] : header;
+  try {
+    return new URL(req.url, "http://localhost").searchParams.get("token") ?? "";
+  } catch {
+    return "";
+  }
+}
+
+function tokenOk(provided) {
+  if (!TOKEN) return true; // no token configured -> allow (see startup warning)
+  if (!provided) return false;
+  const a = Buffer.from(provided);
+  const b = Buffer.from(TOKEN);
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
 }
 
 function escapeAttr(s) {
@@ -144,8 +168,19 @@ function broadcast(obj) {
 }
 
 function startWebSocketServer() {
-  wss = new WebSocketServer({ port: WS_PORT });
+  wss = new WebSocketServer({
+    port: WS_PORT,
+    verifyClient: (info, cb) => {
+      if (tokenOk(extractToken(info.req))) return cb(true);
+      log(`rejected unauthorized connection from ${info.req.socket.remoteAddress}`);
+      cb(false, 401, "Unauthorized");
+    },
+  });
 
+  if (!TOKEN) {
+    log("WARNING: CARDPUTER_TOKEN is not set — connections are UNAUTHENTICATED.");
+    log("         Set CARDPUTER_TOKEN before exposing the bridge beyond localhost.");
+  }
   wss.on("listening", () => log(`WebSocket server listening on ws://0.0.0.0:${WS_PORT}`));
   wss.on("error", (err) => log("WebSocket server error:", String(err)));
 

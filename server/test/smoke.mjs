@@ -81,5 +81,39 @@ console.error("  tool result:", JSON.stringify(toolRes.content?.[0]?.text));
 
 ws.close();
 await client.close();
-console.error("\nPASS: full device <-> Claude loop works");
+
+// --- token enforcement -----------------------------------------------------
+// Spawn a standalone server WITH a token and verify the gate.
+const { spawn } = await import("node:child_process");
+const TOK = "s3cret-test-token";
+const TPORT = "8801";
+const child = spawn("node", ["src/index.mjs"], {
+  env: { ...process.env, CARDPUTER_WS_PORT: TPORT, CARDPUTER_TOKEN: TOK },
+  stdio: ["ignore", "ignore", "pipe"],
+});
+await withTimeout(
+  new Promise((res) => child.stderr.on("data", (d) => String(d).includes("listening") && res())),
+  4000,
+  "token-server listening"
+);
+
+const connects = (uri) =>
+  new Promise((resolve) => {
+    const w = new WebSocket(uri);
+    w.on("open", () => {
+      w.close();
+      resolve(true);
+    });
+    w.on("error", () => resolve(false));
+  });
+
+if (await connects(`ws://127.0.0.1:${TPORT}`)) fail("connection WITHOUT token was accepted");
+console.error("✓ auth: connection without token rejected");
+if (await connects(`ws://127.0.0.1:${TPORT}/?token=wrong`)) fail("connection with WRONG token accepted");
+console.error("✓ auth: wrong token rejected");
+if (!(await connects(`ws://127.0.0.1:${TPORT}/?token=${TOK}`))) fail("connection with correct token rejected");
+console.error("✓ auth: correct token accepted");
+child.kill();
+
+console.error("\nPASS: full device <-> Claude loop + token auth work");
 process.exit(0);

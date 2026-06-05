@@ -9,6 +9,7 @@
 #include <mooncake_log.h>
 #include <hal.h>
 #include <cJSON.h>
+#include <esp_crt_bundle.h>
 #include <cstring>
 
 using namespace mooncake;
@@ -71,6 +72,11 @@ void AppClaude::start_ws()
 {
     esp_websocket_client_config_t cfg = {};
     cfg.uri                           = CARDPUTER_CLAUDE_WS_URI;
+    // For wss:// URIs: verify the server cert against the bundled CA roots
+    // (covers Cloudflare). Ignored for plain ws://.
+    cfg.crt_bundle_attach = esp_crt_bundle_attach;
+    // Keepalive so idle connections survive proxies (e.g. Cloudflare).
+    cfg.ping_interval_sec = 20;
 
     _client = esp_websocket_client_init(&cfg);
     if (!_client) {
